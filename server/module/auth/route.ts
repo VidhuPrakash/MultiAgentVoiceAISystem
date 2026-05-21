@@ -1,22 +1,16 @@
 import { Router } from "express";
 import { requireAuth } from "../../middleware/auth";
-import {
-  LoginUserController,
-  logoutController,
-  meController,
-  refreshTokenController,
-  RegisterUserController,
-} from "./controller";
+import * as ctrl from "./controller";
 const authRouter = Router();
 
-authRouter.post("/register", RegisterUserController);
+authRouter.post("/register", ctrl.RegisterUserController);
 
-authRouter.post("/login", LoginUserController);
+authRouter.post("/login", ctrl.LoginUserController);
 
-authRouter.post("/refresh", refreshTokenController);
+authRouter.post("/refresh", ctrl.refreshTokenController);
 
-authRouter.get("/me", requireAuth, meController);
+authRouter.get("/me", requireAuth, ctrl.meController);
 
-authRouter.post("/logout", requireAuth, logoutController);
+authRouter.post("/logout", requireAuth, ctrl.logoutController);
 
 export default authRouter;

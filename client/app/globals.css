@@ -170,8 +170,36 @@
   background: var(--accent-raw);
 }
 
-/* ── Selection highlight ──────────────────────────────── */
 ::selection {
   background: var(--accent-glow);
   color: var(--text);
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.an-fade {
+  animation: fadeUp 0.3s ease both;
+}
+.range-dd-menu {
+  display: none;
+}
+.range-dd-open .range-dd-menu {
+  display: block;
 }

@@ -1,6 +1,5 @@
 "use client";
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useFormErrors } from "@/hook/use-form-error";
 import { useAuthStore } from "@/store/auth-store";
@@ -9,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { FieldError } from "@/components/ui/field-error";
+import { useRouter } from "nextjs-toploader/app";
 
 export default function LoginPage() {
   const { login, isLoading } = useAuthStore();
@@ -42,7 +42,8 @@ export default function LoginPage() {
 
     try {
       await login(form.email, form.password);
-      router.push("/dashboard");
+      const role = useAuthStore.getState().user?.role;
+      router.push(role === "admin" ? "/admin/dashboard" : "/dashboard");
     } catch (err) {
       handleApiError(err);
     }
@@ -91,9 +92,9 @@ export default function LoginPage() {
               height="24"
               fill="none"
               stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
             >
               <path d="M21.21 15.89A10 10 0 1 1 8 2.83" />
               <path d="M22 12A10 10 0 0 0 12 2v10z" />

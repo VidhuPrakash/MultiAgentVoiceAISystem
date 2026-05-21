@@ -1,6 +1,3 @@
-import { eq } from "drizzle-orm";
-import { db } from "../../db";
-import { users } from "../../db/schema";
 import bcrypt from "bcryptjs";
 import { signAccess, signRefresh, verifyRefresh } from "../../lib/token";
 import {
@@ -9,16 +6,9 @@ import {
   REFRESH_COOKIE,
 } from "../../lib/cookies";
 import { Request, Response } from "express";
-import {
-  checkExistingUserWithEmail,
-  createUser,
-  getUserByEmail,
-  createSession,
-  getSessionByToken,
-  deleteSessionByToken,
-  getUserByIdSafe,
-} from "./service";
+import * as svc from "./service";
 import { registerSchema, loginSchema } from "./validation";
+import { ok, fail } from "../../helper/response";
 
 /*
 Register user controller
@@ -38,16 +28,13 @@ export const RegisterUserController = async (req: Request, res: Response) => {
     }
     const { name, email, password } = parsed.data;
 
-    const existing = await checkExistingUserWithEmail(email);
+    const existing = await svc.checkExistingUserWithEmail(email);
 
-    if (existing)
-      return res
-        .status(409)
-        .json({ error: "Email already registered", success: false });
+    if (existing) return fail(res, 409, "Email already registered");
 
     const passwordHash = await bcrypt.hash(password, 12);
 
-    const user = await createUser({
+    const user = await svc.createUser({
       name,
       email,
       passwordHash,
@@ -57,19 +44,12 @@ export const RegisterUserController = async (req: Request, res: Response) => {
     const accessToken = signAccess(payload);
     const refreshToken = signRefresh(payload);
 
-    await createSession(user.id, refreshToken);
+    await svc.createSession(user.id, refreshToken);
     setRefreshCookie(res, refreshToken);
 
-    res.status(201).json({
-      data: {
-        token: accessToken,
-        user,
-      },
-      message: "User registered successfully",
-      success: true,
-    });
+    ok(res, { accessToken, user }, "User registered successfully");
   } catch (error) {
-    res.status(500).json({ error: "Something went wrong", success: false });
+    fail(res, 500, "Something went wrong");
   }
 };
 /*
@@ -90,32 +70,25 @@ export const LoginUserController = async (req: Request, res: Response) => {
     }
     const { email, password } = parsed.data;
 
-    const user = await getUserByEmail(email);
-    if (!user)
-      return res
-        .status(401)
-        .json({ error: "Invalid credentials", success: false });
+    const user = await svc.getUserByEmail(email);
+    if (!user) return fail(res, 401, "Invalid credentials");
 
     if (user.isBlocked)
-      return res
-        .status(403)
-        .json({ error: "Account blocked. Contact support.", success: false });
+      return fail(res, 403, "Account blocked. Contact support.");
 
     const valid = await bcrypt.compare(password, user.passwordHash);
-    if (!valid)
-      return res
-        .status(401)
-        .json({ error: "Invalid credentials", success: false });
+    if (!valid) return fail(res, 401, "Invalid credentials");
 
     const payload = { userId: user.id, role: user.role ?? ("user" as const) };
     const accessToken = signAccess(payload);
     const refreshToken = signRefresh(payload);
 
-    await createSession(user.id, refreshToken);
+    await svc.createSession(user.id, refreshToken);
     setRefreshCookie(res, refreshToken);
 
-    res.json({
-      data: {
+    ok(
+      res,
+      {
         accessToken,
         user: {
           id: user.id,
@@ -123,13 +96,11 @@ export const LoginUserController = async (req: Request, res: Response) => {
           email: user.email,
           role: user.role,
         },
-        message: "Login successful",
-        success: true,
       },
-    });
+      "Login successful",
+    );
   } catch (error) {
-    console.log(error);
-    res.status(500).json({ error: "Something went wrong", success: false });
+    fail(res, 500, "Something went wrong");
   }
 };
 /*
@@ -138,37 +109,33 @@ refresh user controller
 */
 export const refreshTokenController = async (req: Request, res: Response) => {
   const token = req.cookies[REFRESH_COOKIE];
-  if (!token) return res.status(401).json({ error: "No refresh token" });
+  if (!token) return fail(res, 401, "No refresh token");
 
   try {
-    const session = await getSessionByToken(token);
+    const session = await svc.getSessionByToken(token);
     if (!session || session.expiresAt < new Date()) {
       clearRefreshCookie(res);
-      return res
-        .status(401)
-        .json({ error: "Session expired. Please login again." });
+      return fail(res, 401, "Session expired. Please login again.");
     }
 
     const payload = verifyRefresh(token);
 
-    await deleteSessionByToken(token);
+    await svc.deleteSessionByToken(token);
     const newRefreshToken = signRefresh({
       userId: payload.userId,
       role: payload.role,
     });
-    await createSession(payload.userId, newRefreshToken);
+    await svc.createSession(payload.userId, newRefreshToken);
     setRefreshCookie(res, newRefreshToken);
 
     const newAccess = signAccess({
       userId: payload.userId,
       role: payload.role,
     });
-    res.json({ accessToken: newAccess });
+    ok(res, { accessToken: newAccess });
   } catch {
     clearRefreshCookie(res);
-    return res
-      .status(401)
-      .json({ error: "Session expired. Please login again." });
+    return fail(res, 401, "Session expired. Please login again.");
   }
 };
 
@@ -180,12 +147,12 @@ export const logoutController = async (req: Request, res: Response) => {
   try {
     const token = req.cookies[REFRESH_COOKIE];
     if (token) {
-      await deleteSessionByToken(token).catch(() => {});
+      await svc.deleteSessionByToken(token).catch(() => {});
     }
     clearRefreshCookie(res);
-    res.json({ message: "Logged out successfully", success: true });
+    ok(res, null, "Logged out successfully");
   } catch (error) {
-    res.status(500).json({ error: "Something went wrong", success: false });
+    fail(res, 500, "Something went wrong");
   }
 };
 
@@ -195,15 +162,10 @@ Me controller
 */
 export const meController = async (req: Request, res: Response) => {
   try {
-    const user = await getUserByIdSafe(req.user!.userId);
-    if (!user)
-      return res.status(404).json({ error: "User not found", success: false });
-    res.json({
-      data: user,
-      message: "User fetched successfully",
-      success: true,
-    });
+    const user = await svc.getUserByIdSafe(req.user!.userId);
+    if (!user) return fail(res, 404, "User not found");
+    ok(res, user, "User fetched successfully");
   } catch (error) {
-    res.status(500).json({ error: "Something went wrong", success: false });
+    fail(res, 500, "Something went wrong");
   }
 };

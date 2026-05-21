@@ -34,6 +34,7 @@ export function UserMenu({
         className={`user-menu__trigger ${collapsed ? "user-menu__trigger--collapsed" : ""}`}
         onClick={() => setOpen((p) => !p)}
         title={collapsed ? name : undefined}
+        suppressHydrationWarning
       >
         <span className="avatar">{initials}</span>
         {!collapsed && (
@@ -60,13 +61,7 @@ export function UserMenu({
             </div>
           </div>
           <div className="user-menu__divider" />
-          <Link
-            href="/settings"
-            className="user-menu__item"
-            onClick={() => setOpen(false)}
-          >
-            <Settings size={14} /> Settings
-          </Link>
+          
           <button
             className="user-menu__item user-menu__item--danger"
             onClick={() => {

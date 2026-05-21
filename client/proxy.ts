@@ -1,43 +1,45 @@
 import { NextRequest, NextResponse } from "next/server";
-import { jwtDecode } from "jwt-decode";
 
-type JwtPayload = { userId: string; role: "admin" | "user"; exp: number };
-
-const REFRESH_COOKIE = process.env.NEXT_PUBLIC_REFRESH_COOKIE!;
+const PUBLIC = ["/login", "/register"];
 
 export function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
-  const refreshCookie = req.cookies.get(REFRESH_COOKIE)?.value;
-  const isAuthPage = pathname === "/login" || pathname === "/register";
+  const role = req.cookies.get("role")?.value;
 
-  if (!refreshCookie) {
-    if (isAuthPage) return NextResponse.next();
-    return NextResponse.redirect(new URL("/login", req.url));
-  }
+  // Skip role-based redirects for RSC/prefetch/HMR internal requests to
+  // prevent infinite redirect loops caused by speculative prefetching.
+  const isInternalRequest =
+    req.headers.has("RSC") ||
+    req.headers.has("Next-Router-Prefetch") ||
+    req.headers.has("Next-HMR-Refresh");
 
-  try {
-    const { role, exp } = jwtDecode<JwtPayload>(refreshCookie);
+  const isAuthPage = PUBLIC.some((p) => pathname.startsWith(p));
+  const isAdminPath = pathname.startsWith("/admin");
 
-    if (exp * 1000 < Date.now()) {
-      const res = NextResponse.redirect(new URL("/login", req.url));
-      res.cookies.delete(REFRESH_COOKIE);
-      return res;
+  if (!isInternalRequest) {
+    if (!role) {
+      if (!isAuthPage) return NextResponse.redirect(new URL("/login", req.url));
+      return NextResponse.next();
     }
 
-    if (isAuthPage)
-      return NextResponse.redirect(new URL("/dashboard", req.url));
+    // Authenticated → redirect away from auth pages to role home
+    if (isAuthPage) {
+      const home = role === "admin" ? "/admin/users" : "/dashboard";
+      return NextResponse.redirect(new URL(home, req.url));
+    }
 
-    if (pathname.startsWith("/admin") && role !== "admin")
-      return NextResponse.redirect(new URL("/dashboard", req.url));
+    // Admin trying to access non-admin routes
+    if (role === "admin" && !isAdminPath)
+      return NextResponse.redirect(new URL("/admin/users", req.url));
 
-    return NextResponse.next();
-  } catch {
-    const res = NextResponse.redirect(new URL("/login", req.url));
-    res.cookies.delete(REFRESH_COOKIE);
-    return res;
+    // Normal user trying to access admin routes
+    if (role !== "admin" && isAdminPath)
+      return NextResponse.redirect(new URL("/dashboard", req.url));
   }
+
+  return NextResponse.next();
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/admin/:path*", "/login", "/register"],
+  matcher: ["/((?!api|_next/static|_next/image|favicon.ico).*)"],
 };

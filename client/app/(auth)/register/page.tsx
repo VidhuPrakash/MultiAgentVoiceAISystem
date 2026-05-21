@@ -1,6 +1,5 @@
 "use client";
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuthStore } from "@/store/auth-store";
 import { useFormErrors } from "@/hook/use-form-error";
@@ -10,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { FieldError } from "@/components/ui/field-error";
+import { useRouter } from "nextjs-toploader/app";
 
 type FieldErrors = {
   name?: string;
@@ -57,7 +57,6 @@ function validate(form: {
   return errs;
 }
 
-// ── Password strength ─────────────────────────────────────
 function strength(pw: string): { score: number; label: string; color: string } {
   if (!pw) return { score: 0, label: "", color: "transparent" };
   let score = 0;
@@ -73,7 +72,6 @@ function strength(pw: string): { score: number; label: string; color: string } {
   return { score, label: "Strong", color: "var(--accent-raw)" };
 }
 
-// ── Page ──────────────────────────────────────────────────
 export default function RegisterPage() {
   const { register, isLoading } = useAuthStore();
   const { globalError, handleApiError, clearErrors } = useFormErrors();
@@ -125,7 +123,8 @@ export default function RegisterPage() {
     }
     try {
       await register(form.name.trim(), form.email.trim(), form.password);
-      router.push("/dashboard");
+      const role = useAuthStore.getState().user?.role;
+      router.push(role === "admin" ? "/admin/users" : "/dashboard");
     } catch (err) {
       handleApiError(err);
     }
@@ -180,9 +179,9 @@ export default function RegisterPage() {
               height="24"
               fill="none"
               stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
             >
               <path d="M21.21 15.89A10 10 0 1 1 8 2.83" />
               <path d="M22 12A10 10 0 0 0 12 2v10z" />

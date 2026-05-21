@@ -19,7 +19,11 @@ export function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
     <header className="topbar">
       {/* Left */}
       <div className="topbar__left">
-        <button className="topbar__menu-btn" onClick={onMenuClick}>
+        <button
+          className="topbar__menu-btn"
+          onClick={onMenuClick}
+          suppressHydrationWarning
+        >
           <Menu size={16} />
         </button>
         <div className="topbar__title-block">
@@ -29,17 +33,11 @@ export function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
 
       {/* Right */}
       <div className="topbar__right">
-        <button className="topbar__icon-btn" title="Notifications">
-          <Bell size={15} />
-          <span className="topbar__badge" />
-        </button>
-        <button className="topbar__icon-btn" title="Settings">
-          <Settings size={15} />
-        </button>
         <button
           className="avatar avatar--topbar"
           title="Sign out"
           onClick={() => logout()}
+          suppressHydrationWarning
         >
           {initials}
         </button>

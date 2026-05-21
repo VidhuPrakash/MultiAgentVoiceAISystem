@@ -23,11 +23,9 @@ interface NavItem {
 
 export const adminNav: NavItem[] = [
   { label: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard },
-  { label: "User Management", href: "/admin/users", icon: Users },
-  { label: "Agent Management", href: "/admin/agents", icon: Bot },
-  { label: "Call Monitoring", href: "/admin/calls", icon: PhoneCall },
-  { label: "Usage Tracking", href: "/admin/usage", icon: BarChart3 },
-  { label: "Billing Control", href: "/admin/billing", icon: CreditCard },
+  { label: "Users", href: "/admin/users", icon: Users },
+  { label: "Agents", href: "/admin/agents", icon: Bot },
+  { label: "Calls", href: "/admin/calls", icon: PhoneCall },
 ];
 
 export const userNav: NavItem[] = [

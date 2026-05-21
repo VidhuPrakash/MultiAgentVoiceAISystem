@@ -24,12 +24,12 @@ export const updateAgentSchema = z.object({
   isActive: z.boolean().optional(),
 });
 
-export const assignPlanSchema = z.object({
-  plan: z.enum(["free", "starter", "pro"]),
-  minutesLimit: z.number().int().min(0),
-});
-
 export const paginationSchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
   limit: z.coerce.number().int().min(1).max(100).default(20),
+});
+
+export const analyticsRangeSchema = z.object({
+  range: z.enum(["daily", "monthly", "yearly"]).default("monthly"),
+  year: z.coerce.number().int().min(2020).max(2100).optional(),
 });

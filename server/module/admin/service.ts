@@ -1,13 +1,12 @@
 import { db } from "../../db";
 import { users, agents, calls, leads, sessions } from "../../db/schema";
-import { eq, desc, count, sum, sql, ilike, or } from "drizzle-orm";
+import { eq, desc, count, sql } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import type { z } from "zod";
 import type {
   createUserSchema,
   updateUserSchema,
   updateAgentSchema,
-  assignPlanSchema,
 } from "./validation";
 
 export async function getAllUsers(page: number, limit: number) {
@@ -128,22 +127,6 @@ export async function blockUnblockUser(id: string, block: boolean) {
   return updated ?? null;
 }
 
-export async function assignPlan(
-  id: string,
-  data: z.infer<typeof assignPlanSchema>,
-) {
-  const [updated] = await db
-    .update(users)
-    .set({ plan: data.plan, minutesLimit: data.minutesLimit })
-    .where(eq(users.id, id))
-    .returning({
-      id: users.id,
-      plan: users.plan,
-      minutesLimit: users.minutesLimit,
-    });
-  return updated ?? null;
-}
-
 export async function getAllAgents(page: number, limit: number) {
   const offset = (page - 1) * limit;
 
@@ -153,14 +136,16 @@ export async function getAllAgents(page: number, limit: number) {
         id: agents.id,
         name: agents.name,
         type: agents.type,
+        systemPrompt: agents.systemPrompt,
         voice: agents.voice,
         isActive: agents.isActive,
         vapiAssistantId: agents.vapiAssistantId,
         createdAt: agents.createdAt,
-        user: {
+        owner: {
           id: users.id,
           name: users.name,
           email: users.email,
+          plan: users.plan,
         },
       })
       .from(agents)
@@ -185,11 +170,6 @@ export async function adminUpdateAgent(
     .where(eq(agents.id, id))
     .returning();
   return updated ?? null;
-}
-
-export async function adminGetAgentById(id: string) {
-  const [row] = await db.select().from(agents).where(eq(agents.id, id));
-  return row ?? null;
 }
 
 export async function getAllCalls(page: number, limit: number) {
@@ -244,63 +224,121 @@ export async function getCallById(id: string) {
   return row ?? null;
 }
 
-export async function getPlatformStats() {
-  const [[userStats], [callStats], [agentStats]] = await Promise.all([
-    db
-      .select({
-        total: count(),
-        blocked: sql<number>`count(*) filter (where ${users.isBlocked} = true)`,
-      })
-      .from(users),
+// New users per month or year
+export async function getUsersOverTime(range: "daily" | "monthly" | "yearly") {
+  const format =
+    range === "daily"
+      ? sql`TO_CHAR(${users.createdAt}, 'YYYY-MM-DD')`
+      : range === "monthly"
+        ? sql`TO_CHAR(${users.createdAt}, 'YYYY-MM')`
+        : sql`TO_CHAR(${users.createdAt}, 'YYYY')`;
 
-    db
-      .select({
-        total: count(),
-        completed: sql<number>`count(*) filter (where ${calls.status} = 'completed')`,
-        missed: sql<number>`count(*) filter (where ${calls.status} = 'missed')`,
-        totalMinutes: sql<number>`coalesce(sum(${calls.duration}), 0)`,
-      })
-      .from(calls),
+  const rows = await db
+    .select({ period: format, count: count() })
+    .from(users)
+    .groupBy(format)
+    .orderBy(format);
 
-    db.select({ total: count() }).from(agents),
-  ]);
-
-  return {
-    users: {
-      total: Number(userStats.total),
-      blocked: Number(userStats.blocked),
-    },
-    calls: {
-      total: Number(callStats.total),
-      completed: Number(callStats.completed),
-      missed: Number(callStats.missed),
-      totalMinutes: Math.round(Number(callStats.totalMinutes) / 60),
-    },
-    agents: {
-      total: Number(agentStats.total),
-    },
-  };
+  return rows;
 }
 
-export async function getUserUsageStats(page: number, limit: number) {
-  const offset = (page - 1) * limit;
+// Plan distribution for radar/pie
+export async function getPlanDistribution() {
+  const rows = await db
+    .select({ plan: users.plan, count: count() })
+    .from(users)
+    .groupBy(users.plan);
+  return rows;
+}
 
+// Top 5 users by minutesUsed
+export async function getTopMinutesUsers() {
   const rows = await db
     .select({
       id: users.id,
       name: users.name,
       email: users.email,
       plan: users.plan,
-      minutesLimit: users.minutesLimit,
       minutesUsed: users.minutesUsed,
-      totalCalls: sql<number>`count(${calls.id})`,
+      minutesLimit: users.minutesLimit,
     })
     .from(users)
-    .leftJoin(calls, eq(calls.userId, users.id))
-    .groupBy(users.id)
+    .where(eq(users.role, "user"))
     .orderBy(desc(users.minutesUsed))
-    .limit(limit)
-    .offset(offset);
+    .limit(5);
+  return rows;
+}
 
+// Calls over time
+export async function getCallsOverTime(range: "daily" | "monthly" | "yearly") {
+  const format =
+    range === "daily"
+      ? sql`TO_CHAR(${calls.startedAt}, 'YYYY-MM-DD')`
+      : range === "monthly"
+        ? sql`TO_CHAR(${calls.startedAt}, 'YYYY-MM')`
+        : sql`TO_CHAR(${calls.startedAt}, 'YYYY')`;
+
+  const rows = await db
+    .select({ period: format, count: count() })
+    .from(calls)
+    .groupBy(format)
+    .orderBy(format);
+
+  return rows;
+}
+
+// Summary stats card
+export async function getDashboardSummary() {
+  const [
+    [{ totalUsers }],
+    [{ totalCalls }],
+    [{ totalAgents }],
+    [{ blockedUsers }],
+  ] = await Promise.all([
+    db.select({ totalUsers: count() }).from(users),
+    db.select({ totalCalls: count() }).from(calls),
+    db.select({ totalAgents: count() }).from(agents),
+    db
+      .select({ blockedUsers: count() })
+      .from(users)
+      .where(eq(users.isBlocked, true)),
+  ]);
+
+  // Total minutes consumed across all users
+  const [{ totalMinutes }] = await db
+    .select({
+      totalMinutes: sql<number>`COALESCE(SUM(${users.minutesUsed}), 0)`,
+    })
+    .from(users);
+
+  return {
+    totalUsers: Number(totalUsers),
+    totalCalls: Number(totalCalls),
+    totalAgents: Number(totalAgents),
+    blockedUsers: Number(blockedUsers),
+    totalMinutes: Number(totalMinutes),
+  };
+}
+
+// Call status distribution (completed/failed/missed etc.)
+export async function getCallStatusDistribution() {
+  const rows = await db
+    .select({ status: calls.status, count: count() })
+    .from(calls)
+    .groupBy(calls.status);
+  return rows;
+}
+
+// Avg call duration per month
+export async function getAvgCallDuration() {
+  const rows = await db
+    .select({
+      period: sql`TO_CHAR(${calls.startedAt}, 'YYYY-MM')`,
+      avgDuration: sql<number>`ROUND(AVG(${calls.duration}), 2)`,
+    })
+    .from(calls)
+    .where(sql`${calls.duration} IS NOT NULL`)
+    .groupBy(sql`TO_CHAR(${calls.startedAt}, 'YYYY-MM')`)
+    .orderBy(sql`TO_CHAR(${calls.startedAt}, 'YYYY-MM')`);
   return rows;
 }

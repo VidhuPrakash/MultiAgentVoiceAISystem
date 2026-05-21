@@ -37,6 +37,7 @@ export const useAuthStore = create<AuthState & AuthActions>()(
             state.user = data.data.user;
             state.isAuthenticated = true;
           });
+          document.cookie = `role=${data.data.user.role};path=/;samesite=lax`;
         } finally {
           set((state) => {
             state.isLoading = false;
@@ -55,6 +56,7 @@ export const useAuthStore = create<AuthState & AuthActions>()(
             state.user = data.data.user;
             state.isAuthenticated = true;
           });
+          document.cookie = `role=${data.data.user.role};path=/;samesite=lax`;
         } finally {
           set((state) => {
             state.isLoading = false;
@@ -66,6 +68,7 @@ export const useAuthStore = create<AuthState & AuthActions>()(
           await api.post("/auth/logout");
         } catch {
         } finally {
+          document.cookie = "role=;path=/;max-age=0";
           get().reset();
           window.location.href = "/login";
         }
@@ -94,6 +97,9 @@ export const useAuthStore = create<AuthState & AuthActions>()(
             state.user = data.data as User;
             state.isAuthenticated = true;
           });
+          if (typeof document !== "undefined") {
+            document.cookie = `role=${(data.data as User).role};path=/;samesite=lax`;
+          }
         } catch {
           get().reset();
         } finally {

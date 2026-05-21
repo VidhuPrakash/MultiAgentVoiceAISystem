@@ -85,14 +85,8 @@ function initials(name: string) {
     .slice(0, 2);
 }
 
-interface StatCardProps {
-  icon: React.ReactNode;
-  label: string;
-  value: string | number;
-  iconBg: string;
-}
 
-const LIMIT = 20;
+const LIMIT = 10;
 
 export default function CallsPage() {
   const [data, setData] = useState<PaginatedCalls | null>(null);

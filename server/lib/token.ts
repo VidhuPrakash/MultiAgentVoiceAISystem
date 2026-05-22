@@ -6,6 +6,7 @@ const REFRESH_SECRET = process.env.JWT_REFRESH_SECRET!;
 export type TokenPayload = {
   userId: string;
   role: "admin" | "user";
+  plan: "free" | "starter" | "pro";
 };
 
 export const signAccess = (payload: TokenPayload) =>

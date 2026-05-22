@@ -45,9 +45,11 @@ export const agents = pgTable("agents", {
   name: text("name").notNull(),
   type: agentTypeEnum("type").notNull(),
   systemPrompt: text("system_prompt"),
+  firstMessage: text("first_message"),
   voice: text("voice").default("alloy"),
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),
+  deletedAt: timestamp("deleted_at"),
 });
 
 export const calls = pgTable("calls", {

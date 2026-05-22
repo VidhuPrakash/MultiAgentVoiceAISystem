@@ -146,10 +146,7 @@ export default function UsersPage() {
             Manage user accounts
           </p>
         </div>
-        <Button
-          onClick={() => setCreateOpen(true)}
-          className="bg-[var(--accent-raw)] w-[100px] hover:bg-[var(--accent-raw)]/90 text-white h-9 gap-1.5 flex-shrink-0"
-        >
+        <Button onClick={() => setCreateOpen(true)}>
           <Plus size={14} />
           Add User
         </Button>

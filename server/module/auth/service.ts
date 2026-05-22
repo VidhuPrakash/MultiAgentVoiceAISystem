@@ -28,6 +28,7 @@ export const createUser = async (user: User) => {
       name: users.name,
       email: users.email,
       role: users.role,
+      plan: users.plan,
     });
 
   return data;

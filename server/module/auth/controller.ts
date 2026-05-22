@@ -40,7 +40,11 @@ export const RegisterUserController = async (req: Request, res: Response) => {
       passwordHash,
     });
 
-    const payload = { userId: user.id, role: user.role ?? ("user" as const) };
+    const payload = {
+      userId: user.id,
+      role: user.role ?? ("user" as const),
+      plan: user?.plan ?? ("free" as const),
+    };
     const accessToken = signAccess(payload);
     const refreshToken = signRefresh(payload);
 
@@ -79,7 +83,11 @@ export const LoginUserController = async (req: Request, res: Response) => {
     const valid = await bcrypt.compare(password, user.passwordHash);
     if (!valid) return fail(res, 401, "Invalid credentials");
 
-    const payload = { userId: user.id, role: user.role ?? ("user" as const) };
+    const payload = {
+      userId: user.id,
+      role: user.role ?? ("user" as const),
+      plan: user?.plan ?? ("free" as const),
+    };
     const accessToken = signAccess(payload);
     const refreshToken = signRefresh(payload);
 
@@ -124,6 +132,7 @@ export const refreshTokenController = async (req: Request, res: Response) => {
     const newRefreshToken = signRefresh({
       userId: payload.userId,
       role: payload.role,
+      plan: payload.plan,
     });
     await svc.createSession(payload.userId, newRefreshToken);
     setRefreshCookie(res, newRefreshToken);
@@ -131,6 +140,7 @@ export const refreshTokenController = async (req: Request, res: Response) => {
     const newAccess = signAccess({
       userId: payload.userId,
       role: payload.role,
+      plan: payload.plan,
     });
     ok(res, { accessToken: newAccess });
   } catch {

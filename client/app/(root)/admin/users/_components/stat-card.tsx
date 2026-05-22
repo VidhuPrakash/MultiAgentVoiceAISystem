@@ -7,7 +7,7 @@ export function StatCard({
 }: {
   icon: React.ElementType;
   label: string;
-  value: number;
+  value: number | string;
   color: string;
   iconColor?: string;
 }) {

@@ -225,7 +225,6 @@ export function CreateUserDialog({
           <Button
             onClick={submit}
             disabled={loading}
-            className="bg-[var(--accent-raw)] hover:bg-[var(--accent-raw)]/90 text-white h-9 min-w-[120px]"
           >
             {loading ? (
               <Loader2 size={14} className="animate-spin mr-1.5" />

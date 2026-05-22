@@ -73,7 +73,7 @@
   --card-foreground: oklch(0.93 0 0);
   --popover: oklch(0.13 0.005 240);
   --popover-foreground: oklch(0.93 0 0);
-  --primary: oklch(0.75 0.12 55); /* amber primary */
+  --primary: #076c5a;
   --primary-foreground: oklch(0.1 0 0);
   --secondary: oklch(0.18 0.008 240);
   --secondary-foreground: oklch(0.88 0 0);

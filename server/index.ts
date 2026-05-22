@@ -10,6 +10,7 @@ import authRouter from "./module/auth/route";
 import { errorHandler } from "./middleware/error";
 import { seedAdmin } from "./db/seed";
 import adminRouter from "./module/admin/route";
+import userAgentRouter from "./module/user/route";
 
 const app = express();
 
@@ -24,31 +25,32 @@ app.use(
     credentials: true,
   }),
 );
-// const globalLimiter = rateLimit({
-//   windowMs: 15 * 60 * 1000,
-//   max: 100,
-//   standardHeaders: true,
-//   legacyHeaders: false,
-//   message: { success: false, message: "Too many requests" },
-// });
+const globalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: "Too many requests" },
+});
 
-// const authLimiter = rateLimit({
-//   windowMs: 15 * 60 * 1000,
-//   max: 20,
-//   standardHeaders: true,
-//   legacyHeaders: false,
-//   message: { success: false, message: "Too many auth attempts, try later" },
-// });
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: process.env.NODE_ENV === "production" ? 20 : 1000,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: "Too many auth attempts, try later" },
+});
 
-// app.use(globalLimiter);
+app.use(globalLimiter);
 app.use(express.json({ limit: "10kb" }));
 app.use(cookieParser());
 
 // Routes
 app.use("/webhook", webhookRouter);
-// app.use("/api/auth", authLimiter, authRouter);
-app.use("/api/auth", authRouter);
+app.use("/api/auth", authLimiter, authRouter);
+// app.use("/api/auth", authRouter);
 app.use("/api/admin", adminRouter);
+app.use("/api/user/agents", userAgentRouter);
 
 app.get("/", (_, res) => {
   res.json({

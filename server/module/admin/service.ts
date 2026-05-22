@@ -1,6 +1,6 @@
 import { db } from "../../db";
 import { users, agents, calls, leads, sessions } from "../../db/schema";
-import { eq, desc, count, sql } from "drizzle-orm";
+import { eq, desc, count, sql, isNull } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import type { z } from "zod";
 import type {
@@ -149,6 +149,7 @@ export async function getAllAgents(page: number, limit: number) {
         },
       })
       .from(agents)
+      .where(isNull(agents.deletedAt))
       .leftJoin(users, eq(agents.userId, users.id))
       .orderBy(desc(agents.createdAt))
       .limit(limit)

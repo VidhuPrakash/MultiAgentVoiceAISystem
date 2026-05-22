@@ -399,7 +399,6 @@ export function UserDrawer({
             <Button
               onClick={save}
               disabled={saving}
-              className="w-full bg-[var(--accent-raw)] hover:bg-[var(--accent-raw)]/90 text-white h-9 mt-2"
             >
               {saving ? (
                 <Loader2 size={14} className="animate-spin mr-1.5" />

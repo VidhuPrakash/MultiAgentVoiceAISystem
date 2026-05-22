@@ -4,6 +4,7 @@ export interface User {
   email?: string;
   passwordHash?: string;
   role?: "admin" | "user";
+  plan?: "free" | "starter" | "pro";
 }
 
 export interface TokenPayload {

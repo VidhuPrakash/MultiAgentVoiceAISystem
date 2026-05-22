@@ -440,7 +440,7 @@ export default function AgentsPage() {
                         className="px-4 py-3"
                         onClick={(e) => e.stopPropagation()}
                       >
-                        <DropdownMenu>
+                        <DropdownMenu >
                           <DropdownMenuTrigger asChild>
                             <button
                               type="button"
@@ -452,7 +452,7 @@ export default function AgentsPage() {
                           </DropdownMenuTrigger>
                           <DropdownMenuContent
                             align="end"
-                            className="bg-[var(--surface)] border border-[var(--border-raw)] rounded-lg shadow-lg min-w-36 p-1"
+                            className=" border bg-black border-[var(--border-raw)] rounded-lg shadow-lg min-w-36 p-1"
                           >
                             <DropdownMenuItem
                               onClick={() => setEditingAgent(agent)}

@@ -1,3 +1,32 @@
+
+<div align="center">
+   <h1>🤖 Multi Agent Voice System 🎤</h1>
+   <p>
+      <img src="https://img.shields.io/badge/Next.js-React-blue?logo=nextdotjs" alt="Next.js" />
+      <img src="https://img.shields.io/badge/Express.js-Backend-green?logo=express" alt="Express.js" />
+      <img src="https://img.shields.io/badge/PostgreSQL-Database-blue?logo=postgresql" alt="PostgreSQL" />
+      <img src="https://img.shields.io/badge/TypeScript-TypeSafe-blue?logo=typescript" alt="TypeScript" />
+      <img src="https://img.shields.io/badge/Deployed-Vercel-black?logo=vercel" alt="Vercel" />
+   </p>
+   <p><b>AI-powered multi-agent voice system for modern businesses</b></p>
+   <p>Admin & user dashboards • Voice agent configuration • Analytics • VAPI integration</p>
+</div>
+
+---
+
+Welcome to the <b>Multi Agent Voice System</b>! This is a full-stack platform for building, managing, and deploying AI voice agents for business use. It features:
+
+• Modern Next.js/React frontend
+• Robust Node.js/Express backend
+• Secure authentication & role-based access
+• Real-time analytics and reporting
+• Flexible agent configuration (type, voice, prompts)
+• VAPI-powered voice AI (with graceful fallback)
+
+## Live Demo
+
+[https://multi-agent-voice-ai-system.vercel.app/](https://multi-agent-voice-ai-system.vercel.app/)
+
 ## Tech Stack
 
 **Frontend (client):**
@@ -30,33 +59,6 @@
 - pnpm (package manager)
 - ESLint & Prettier (linting/formatting)
 
-<div align="center">
-   <h1>🤖 Multi Agent Voice System 🎤</h1>
-   <p>
-      <img src="https://img.shields.io/badge/Next.js-React-blue?logo=nextdotjs" alt="Next.js" />
-      <img src="https://img.shields.io/badge/Express.js-Backend-green?logo=express" alt="Express.js" />
-      <img src="https://img.shields.io/badge/PostgreSQL-Database-blue?logo=postgresql" alt="PostgreSQL" />
-      <img src="https://img.shields.io/badge/TypeScript-TypeSafe-blue?logo=typescript" alt="TypeScript" />
-      <img src="https://img.shields.io/badge/Deployed-Vercel-black?logo=vercel" alt="Vercel" />
-   </p>
-   <p><b>AI-powered multi-agent voice system for modern businesses</b></p>
-   <p>Admin & user dashboards • Voice agent configuration • Analytics • VAPI integration</p>
-</div>
-
----
-
-Welcome to the <b>Multi Agent Voice System</b>! This is a full-stack platform for building, managing, and deploying AI voice agents for business use. It features:
-
-• Modern Next.js/React frontend
-• Robust Node.js/Express backend
-• Secure authentication & role-based access
-• Real-time analytics and reporting
-• Flexible agent configuration (type, voice, prompts)
-• VAPI-powered voice AI (with graceful fallback)
-
-## Live Demo
-
-[https://multi-agent-voice-ai-system.vercel.app/](https://multi-agent-voice-ai-system.vercel.app/)
 
 ## Project Structure
 

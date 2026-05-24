@@ -91,22 +91,13 @@ export async function createAgent(
 
   const firstMessage = data.firstMessage ?? DEFAULT_FIRST_MESSAGES[data.type];
 
-  const vapiAssistant = await vapiPost("/assistant", {
-    name: data.name,
-    model: {
-      provider: "openai",
-      model: "gpt-4o",
-      messages: [{ role: "system", content: systemPrompt }],
-      temperature: 0.7,
-    },
-    voice: {
-      provider: "openai",
-      voiceId: data.voice ?? "shimmer",
-    },
-    firstMessage,
-    recordingEnabled: true,
-    endCallFunctionEnabled: true,
-  });
+  const vapiPayload = await buildVapiPayload(
+    { ...data, systemPrompt, firstMessage },
+    userId,
+  );
+
+   const vapiAssistant = await vapiPost("/assistant", vapiPayload);
+
 
   const [agent] = await db
     .insert(agents)
@@ -122,6 +113,9 @@ export async function createAgent(
     })
     .returning();
 
+  if (data.type === "appointment" || data.type === "faq") {
+    await syncReceptionistTools(userId);
+  }
   return agent;
 }
 
@@ -173,6 +167,10 @@ export async function updateAgent(
     .where(and(eq(agents.id, id), eq(agents.userId, userId)))
     .returning();
 
+    if (data.isActive !== undefined) {
+      await syncReceptionistTools(userId);
+    }
+
   return updated ?? null;
 }
 
@@ -199,4 +197,131 @@ export async function getUserAgentCount(userId: string) {
     .from(agents)
     .where(and(eq(agents.userId, userId), isNull(agents.deletedAt)));
   return Number(total);
+}
+
+async function buildVapiPayload(
+  data: z.infer<typeof createAgentSchema> & {
+    systemPrompt: string;
+    firstMessage: string;
+  },
+  userId: string,
+) {
+  const base = {
+    name: data.name,
+    model: {
+      provider: "openai",
+      model: "gpt-4o",
+      messages: [{ role: "system", content: data.systemPrompt }],
+      temperature: 0.7,
+    },
+    voice: {
+      provider: "openai",
+      voiceId: data.voice ?? "shimmer",
+    },
+    firstMessage: data.firstMessage,
+    recordingEnabled: true,
+    endCallFunctionEnabled: true,
+  };
+
+  // Only receptionist needs transfer tool
+  if (data.type !== "receptionist") return base;
+
+  // Get sibling agents for this user
+  const siblings = await db
+    .select({
+      type: agents.type,
+      vapiAssistantId: agents.vapiAssistantId,
+    })
+    .from(agents)
+    .where(and(eq(agents.userId, userId), eq(agents.isActive, true)));
+
+  const appointmentAgent = siblings.find((a) => a.type === "appointment");
+  const faqAgent = siblings.find((a) => a.type === "faq");
+
+  // Build transfer destinations
+  const destinations: unknown[] = [];
+
+  if (appointmentAgent?.vapiAssistantId) {
+    destinations.push({
+      type: "assistant",
+      assistantId: appointmentAgent.vapiAssistantId,
+      message: "Let me connect you with our scheduling team!",
+      description: "Transfer to appointment booking agent",
+    });
+  }
+
+  if (faqAgent?.vapiAssistantId) {
+    destinations.push({
+      type: "assistant",
+      assistantId: faqAgent.vapiAssistantId,
+      message: "Let me connect you with our support team!",
+      description: "Transfer to FAQ and support agent",
+    });
+  }
+
+  if (destinations.length === 0) return base;
+
+  return {
+    ...base,
+    tools: [
+      {
+        type: "transferCall",
+        destinations,
+      },
+    ],
+  };
+}
+
+export async function syncReceptionistTools(userId: string) {
+  // Find receptionist for this user
+  const receptionist = await db.query.agents.findFirst({
+    where: and(
+      eq(agents.userId, userId),
+      eq(agents.type, "receptionist"),
+      isNull(agents.deletedAt),
+    ),
+  });
+
+  if (!receptionist?.vapiAssistantId) return;
+
+  // Get other agents
+  const siblings = await db
+    .select({ type: agents.type, vapiAssistantId: agents.vapiAssistantId })
+    .from(agents)
+    .where(
+      and(
+        eq(agents.userId, userId),
+        eq(agents.isActive, true),
+        isNull(agents.deletedAt),
+      ),
+    );
+
+  const appointmentAgent = siblings.find((a) => a.type === "appointment");
+  const faqAgent = siblings.find((a) => a.type === "faq");
+
+  const destinations: unknown[] = [];
+
+  if (appointmentAgent?.vapiAssistantId) {
+    destinations.push({
+      type: "assistant",
+      assistantId: appointmentAgent.vapiAssistantId,
+      message: "Let me connect you with our scheduling team!",
+      description: "Transfer to appointment booking",
+    });
+  }
+
+  if (faqAgent?.vapiAssistantId) {
+    destinations.push({
+      type: "assistant",
+      assistantId: faqAgent.vapiAssistantId,
+      message: "Connecting you with our support team!",
+      description: "Transfer to FAQ support",
+    });
+  }
+
+  if (destinations.length === 0) return;
+
+  await vapiPatch(`/assistant/${receptionist.vapiAssistantId}`, {
+    tools: [{ type: "transferCall", destinations }],
+  });
 }

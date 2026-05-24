@@ -30,11 +30,9 @@ export const adminNav: NavItem[] = [
 
 export const userNav: NavItem[] = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { label: "Agent Management", href: "/agents", icon: Bot },
-  { label: "Call History", href: "/calls", icon: History },
-  { label: "Analytics", href: "/analytics", icon: TrendingUp },
+  { label: "Agents", href: "/agents", icon: Bot },
+  { label: "Calls", href: "/calls", icon: History },
   { label: "Leads / Data", href: "/leads", icon: Database },
-  { label: "Billing", href: "/billing", icon: CreditCard },
 ];
 
 export function getInitials(name?: string | null): string {

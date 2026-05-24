@@ -50,6 +50,7 @@ export interface User {
   id: string;
   name: string;
   email: string;
+  vapiPhoneNumberId?: string;
   role: Role;
   plan: Plan;
   minutesLimit: number;
@@ -77,6 +78,7 @@ export interface CreateUserPayload {
 export interface UpdateUserPayload {
   name?: string;
   email?: string;
+  vapiPhoneNumberId?: string;
   role?: Role;
   plan?: Plan;
   minutesLimit?: number;

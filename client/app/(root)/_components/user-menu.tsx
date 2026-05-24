@@ -1,5 +1,5 @@
-import { useAuthStore } from "@/store/auth-store";
-import { ChevronDown, LogOut, Settings } from "lucide-react";
+import { useAuthStore, useIsAdmin } from "@/store/auth-store";
+import { ChevronDown, CreditCard, LogOut } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
@@ -16,6 +16,7 @@ export function UserMenu({
 }) {
   const [open, setOpen] = useState(false);
   const logout = useAuthStore((s) => s.logout);
+  const isAdmin = useIsAdmin();
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -61,7 +62,17 @@ export function UserMenu({
             </div>
           </div>
           <div className="user-menu__divider" />
-          
+          {!isAdmin && (
+            <Link
+              href="/billing"
+              className="user-menu__item"
+              onClick={() => setOpen(false)}
+            >
+              <CreditCard size={14} />
+              Billing
+            </Link>
+          )}
+
           <button
             className="user-menu__item user-menu__item--danger"
             onClick={() => {

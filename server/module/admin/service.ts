@@ -21,11 +21,36 @@ export async function getAllUsers(page: number, limit: number) {
         role: users.role,
         plan: users.plan,
         minutesLimit: users.minutesLimit,
-        minutesUsed: users.minutesUsed,
+        minutesUsed: sql<number>`
+          COALESCE(
+            CEIL(
+              SUM(
+                CASE
+                  WHEN ${calls.status}='completed'
+                  THEN ${calls.duration}
+                  ELSE 0
+                END
+              ) / 60.0
+            ),
+            0
+          )::int
+        `,
         isBlocked: users.isBlocked,
         createdAt: users.createdAt,
+        vapiPhoneNumberId: users.vapiPhoneNumberId,
       })
       .from(users)
+      .leftJoin(calls, eq(calls.userId, users.id))
+      .groupBy(
+        users.id,
+        users.name,
+        users.email,
+        users.role,
+        users.plan,
+        users.minutesLimit,
+        users.isBlocked,
+        users.createdAt,
+      )
       .orderBy(desc(users.createdAt))
       .limit(limit)
       .offset(offset),
@@ -47,6 +72,7 @@ export async function getUserById(id: string) {
       minutesLimit: users.minutesLimit,
       minutesUsed: users.minutesUsed,
       isBlocked: users.isBlocked,
+      vapiPhoneNumberId: users.vapiPhoneNumberId,
       createdAt: users.createdAt,
     })
     .from(users)
@@ -100,6 +126,7 @@ export async function adminUpdateUser(
       plan: users.plan,
       minutesLimit: users.minutesLimit,
       isBlocked: users.isBlocked,
+      vapiPhoneNumberId: users.vapiPhoneNumberId,
     });
   return updated ?? null;
 }
@@ -254,19 +281,49 @@ export async function getPlanDistribution() {
 
 // Top 5 users by minutesUsed
 export async function getTopMinutesUsers() {
+  const minutesUsedExpr = sql<number>`
+    COALESCE(
+      CEIL(
+        SUM(
+          CASE
+            WHEN ${calls.status}='completed'
+            THEN COALESCE(${calls.duration},0)
+            ELSE 0
+          END
+        ) / 60.0
+      ),
+      0
+    )::int
+  `;
+
+  const usagePercentExpr = sql<number>`
+    COALESCE(
+      ROUND(
+        (${minutesUsedExpr}::numeric /
+        NULLIF(${users.minutesLimit},0)) * 100
+      ),
+      0
+    )::int
+  `;
+
   const rows = await db
     .select({
       id: users.id,
       name: users.name,
       email: users.email,
       plan: users.plan,
-      minutesUsed: users.minutesUsed,
       minutesLimit: users.minutesLimit,
+
+      minutesUsed: minutesUsedExpr,
+      usagePercent: usagePercentExpr,
     })
     .from(users)
+    .leftJoin(calls, eq(calls.userId, users.id))
     .where(eq(users.role, "user"))
-    .orderBy(desc(users.minutesUsed))
+    .groupBy(users.id, users.name, users.email, users.plan, users.minutesLimit)
+    .orderBy(desc(usagePercentExpr))
     .limit(5);
+
   return rows;
 }
 
@@ -342,4 +399,38 @@ export async function getAvgCallDuration() {
     .groupBy(sql`TO_CHAR(${calls.startedAt}, 'YYYY-MM')`)
     .orderBy(sql`TO_CHAR(${calls.startedAt}, 'YYYY-MM')`);
   return rows;
+}
+
+export async function assignPhoneNumber(
+  userId: string,
+  vapiPhoneNumberId: string,
+) {
+  const [updated] = await db
+    .update(users)
+    .set({ vapiPhoneNumberId })
+    .where(eq(users.id, userId))
+    .returning({
+      id: users.id,
+      name: users.name,
+      email: users.email,
+      vapiPhoneNumberId: users.vapiPhoneNumberId,
+    });
+  return updated ?? null;
+}
+
+export async function assignPlan(
+  userId: string,
+  plan: "free" | "starter" | "pro",
+  minutesLimit: number,
+) {
+  const [updated] = await db
+    .update(users)
+    .set({ plan, minutesLimit })
+    .where(eq(users.id, userId))
+    .returning({
+      id: users.id,
+      plan: users.plan,
+      minutesLimit: users.minutesLimit,
+    });
+  return updated ?? null;
 }

@@ -217,7 +217,7 @@ export default function AnalyticsDashboard() {
           </div>
         </div>
 
-        {/* ── Stat cards row ── */}
+        {/* Stat cards row */}
         <div
           style={{
             flexShrink: 0,
@@ -240,7 +240,6 @@ export default function AnalyticsDashboard() {
           ))}
         </div>
 
-        {/* ── Row 2: Users chart (70%) + Plan donut (30%) ── */}
         <div
           className="row-2"
           style={{

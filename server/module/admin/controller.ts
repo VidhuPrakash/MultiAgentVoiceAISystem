@@ -5,10 +5,11 @@ import {
   updateAgentSchema,
   paginationSchema,
   analyticsRangeSchema,
+  assignPlanSchema,
+  assignPhoneSchema,
 } from "./validation";
 import * as svc from "./service";
 import { fail, ok } from "../../helper/response";
-
 
 export async function getUsers(
   req: Request,
@@ -194,47 +195,146 @@ export async function getCall(req: Request, res: Response, next: NextFunction) {
   }
 }
 
-export async function getDashboardSummary(req: Request, res: Response, next: NextFunction) {
+export async function getDashboardSummary(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
   try {
     const data = await svc.getDashboardSummary();
     ok(res, data);
-  } catch (e) { next(e); }
+  } catch (e) {
+    next(e);
+  }
 }
 
-export async function getUsersOverTime(req: Request, res: Response, next: NextFunction) {
+export async function getUsersOverTime(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
   try {
     const { range } = analyticsRangeSchema.parse(req.query);
     ok(res, await svc.getUsersOverTime(range));
-  } catch (e) { next(e); }
+  } catch (e) {
+    next(e);
+  }
 }
 
-export async function getPlanDistribution(req: Request, res: Response, next: NextFunction) {
+export async function getPlanDistribution(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
   try {
     ok(res, await svc.getPlanDistribution());
-  } catch (e) { next(e); }
+  } catch (e) {
+    next(e);
+  }
 }
 
-export async function getTopMinutesUsers(req: Request, res: Response, next: NextFunction) {
+export async function getTopMinutesUsers(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
   try {
     ok(res, await svc.getTopMinutesUsers());
-  } catch (e) { next(e); }
+  } catch (e) {
+    next(e);
+  }
 }
 
-export async function getCallsOverTime(req: Request, res: Response, next: NextFunction) {
+export async function getCallsOverTime(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
   try {
     const { range } = analyticsRangeSchema.parse(req.query);
     ok(res, await svc.getCallsOverTime(range));
-  } catch (e) { next(e); }
+  } catch (e) {
+    next(e);
+  }
 }
 
-export async function getCallStatusDistribution(req: Request, res: Response, next: NextFunction) {
+export async function getCallStatusDistribution(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
   try {
     ok(res, await svc.getCallStatusDistribution());
-  } catch (e) { next(e); }
+  } catch (e) {
+    next(e);
+  }
 }
 
-export async function getAvgCallDuration(req: Request, res: Response, next: NextFunction) {
+export async function getAvgCallDuration(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
   try {
     ok(res, await svc.getAvgCallDuration());
-  } catch (e) { next(e); }
+  } catch (e) {
+    next(e);
+  }
+}
+
+export async function assignPhone(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
+  try {
+    const parsed = assignPhoneSchema.safeParse(req.body);
+    if (!parsed.success) {
+      const errors = parsed.error.issues.map((e) => ({
+        field: e.path[0],
+        message: e.message,
+      }));
+      return res.status(400).json({ success: false, errors });
+    }
+
+    const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+    const updated = await svc.assignPhoneNumber(
+      id,
+      parsed.data.vapiPhoneNumberId,
+    );
+    if (!updated) return fail(res, 404, "User not found");
+
+    ok(res, updated, "Phone number assigned");
+  } catch (e) {
+    next(e);
+  }
+}
+
+export async function assignPlan(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
+  try {
+    const parsed = assignPlanSchema.safeParse(req.body);
+    if (!parsed.success) {
+      const errors = parsed.error.issues.map((e) => ({
+        field: e.path[0],
+        message: e.message,
+      }));
+      return res.status(400).json({ success: false, errors });
+    }
+
+    const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+    const updated = await svc.assignPlan(
+      id,
+      parsed.data.plan,
+      parsed.data.minutesLimit,
+    );
+    if (!updated) return fail(res, 404, "User not found");
+
+    ok(res, updated, "Plan assigned");
+  } catch (e) {
+    next(e);
+  }
 }

@@ -15,6 +15,7 @@ export const updateUserSchema = z.object({
   plan: z.enum(["free", "starter", "pro"]).optional(),
   minutesLimit: z.number().int().min(0).optional(),
   role: z.enum(["admin", "user"]).optional(),
+  vapiPhoneNumberId: z.string().optional(),
 });
 
 export const updateAgentSchema = z.object({
@@ -32,4 +33,13 @@ export const paginationSchema = z.object({
 export const analyticsRangeSchema = z.object({
   range: z.enum(["daily", "monthly", "yearly"]).default("monthly"),
   year: z.coerce.number().int().min(2020).max(2100).optional(),
+});
+
+export const assignPhoneSchema = z.object({
+  vapiPhoneNumberId: z.string().min(1, "Phone number ID required"),
+});
+
+export const assignPlanSchema = z.object({
+  plan: z.enum(["free", "starter", "pro"]),
+  minutesLimit: z.number().int().min(0),
 });

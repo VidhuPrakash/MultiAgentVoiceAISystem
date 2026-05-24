@@ -126,7 +126,7 @@ export default function AgentsPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<Agent | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Agent | null>(null);
-
+  const [agentLimit, setAgentLimit] = useState(1);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -155,10 +155,22 @@ export default function AgentsPage() {
       setLoading(true);
       setFetchError(null);
       try {
-        const { data } = await api.get<{ success: boolean; data: Agent[] }>(
-          "/user/agents",
-        );
-        setAgents(data.data);
+        const [agentsRes, billingRes] = await Promise.all([
+          api.get<{ success: boolean; data: Agent[] }>("/user/agents"),
+
+          api.get<{
+            success: boolean;
+            data: {
+              limits: {
+                agentLimit: number;
+              };
+            };
+          }>("/user/billing"),
+        ]);
+
+        setAgents(agentsRes.data.data);
+
+        setAgentLimit(billingRes.data.data.limits.agentLimit);
       } catch (err) {
         setFetchError(
           extractApiMessage(err, "Failed to load agents. Please try again."),
@@ -172,7 +184,7 @@ export default function AgentsPage() {
   }, []);
 
   const activeCount = agents.filter((a) => a.isActive).length;
-  const atLimit = agents.length >= PLAN_LIMIT;
+  const atLimit = agents.length >= agentLimit;
 
   function openCreate() {
     setEditTarget(null);
@@ -190,7 +202,6 @@ export default function AgentsPage() {
         data: Agent;
       }>(`/user/agents/${agent.id}`);
 
-    
       setEditTarget(data.data);
       setDialogOpen(true);
     } catch (err) {
@@ -303,7 +314,7 @@ export default function AgentsPage() {
 
   return (
     <div className="min-h-screen bg-[--bg]">
-      <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
+      <div className=" max-w-full px-4 py-8 sm:px-6 lg:px-8">
         <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <h1 className="text-2xl font-bold tracking-tight text-[--text]">
@@ -351,7 +362,7 @@ export default function AgentsPage() {
             color="bg-[var(--danger)]/10 text-[var(--danger)]"
             icon={Shield}
             label="Plan Limit"
-            value={`${agents.length}/${PLAN_LIMIT}`}
+            value={`${agents.length}/${agentLimit}`}
           />
           <StatCard
             color="bg-[var(--accent-glow)] text-[var(--accent-raw)]"

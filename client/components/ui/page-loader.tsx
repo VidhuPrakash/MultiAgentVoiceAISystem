@@ -116,7 +116,7 @@ export function PageLoader({
         {/* Sliding strip — width = (icon 36px + gap 18px) × count */}
         <div
           className="flex items-center gap-[18px] absolute top-0 left-0"
-          style={{ animation: "autoniv-slide 2.4s linear infinite" }}
+          style={{ animation: "aiv-slide 2.4s linear infinite" }}
         >
           {ICONS.map((Icon, i) => (
             <div
@@ -126,7 +126,7 @@ export function PageLoader({
                 background: "var(--surface)",
                 borderColor: "var(--border-raw)",
                 color: "var(--text-2)",
-                animation: `autoniv-pop 2.4s ease-in-out infinite`,
+                animation: `aiv-pop 2.4s ease-in-out infinite`,
                 animationDelay: `${i * 0.18}s`,
               }}
             >
@@ -141,22 +141,22 @@ export function PageLoader({
         className="text-[var(--text-2)] text-xs tracking-widest uppercase"
         style={{
           fontFamily: "var(--font-mono)",
-          animation: "autoniv-pulse 1.6s ease-in-out infinite",
+          animation: "aiv-pulse 1.6s ease-in-out infinite",
         }}
       >
         {label}
       </p>
 
       <style>{`
-        @keyframes autoniv-slide {
+        @keyframes aiv-slide {
           from { transform: translateX(0); }
           to   { transform: translateX(-54px); }
         }
-        @keyframes autoniv-pop {
+        @keyframes aiv-pop {
           0%,100% { opacity: .3; transform: scale(.9); border-color: var(--border-raw); }
           50%      { opacity: 1;  transform: scale(1.06); border-color: var(--accent-raw); color: var(--accent-raw); }
         }
-        @keyframes autoniv-pulse {
+        @keyframes aiv-pulse {
           0%,100% { opacity: .35; }
           50%      { opacity: 1; }
         }

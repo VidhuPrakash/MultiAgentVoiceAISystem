@@ -17,24 +17,43 @@ export function proxy(req: NextRequest) {
   const isAdminPath = pathname.startsWith("/admin");
 
   if (!isInternalRequest) {
+    if (pathname === "/") {
+      if (!role) {
+        return NextResponse.redirect(new URL("/login", req.url));
+      }
+
+      return NextResponse.redirect(
+        new URL(role === "admin" ? "/admin/dashboard" : "/dashboard", req.url),
+      );
+    }
+
+    // Unauthenticated user
     if (!role) {
-      if (!isAuthPage) return NextResponse.redirect(new URL("/login", req.url));
+      if (!isAuthPage) {
+        return NextResponse.redirect(new URL("/login", req.url));
+      }
+
       return NextResponse.next();
     }
 
-    // Authenticated → redirect away from auth pages to role home
+    // Authenticated users cannot visit auth pages
     if (isAuthPage) {
-      const home = role === "admin" ? "/admin/users" : "/dashboard";
-      return NextResponse.redirect(new URL(home, req.url));
+      return NextResponse.redirect(
+        new URL(role === "admin" ? "/admin/dashboard" : "/dashboard", req.url),
+      );
     }
 
     // Admin trying to access non-admin routes
-    if (role === "admin" && !isAdminPath)
-      return NextResponse.redirect(new URL("/admin/users", req.url));
+    if (role === "admin" && !isAdminPath) {
+      return NextResponse.redirect(new URL("/admin/dashboard", req.url));
+    }
 
     // Normal user trying to access admin routes
-    if (role !== "admin" && isAdminPath)
+    if (role !== "admin" && isAdminPath) {
       return NextResponse.redirect(new URL("/dashboard", req.url));
+    }
+
+    return NextResponse.next();
   }
 
   return NextResponse.next();

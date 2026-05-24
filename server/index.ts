@@ -8,10 +8,13 @@ import cookieParser from "cookie-parser";
 import webhookRouter from "./webhook/webhook";
 import authRouter from "./module/auth/route";
 import { errorHandler } from "./middleware/error";
-import { seedAdmin } from "./db/seed";
+import { seedAdmin } from "./scripts/admin";
 import adminRouter from "./module/admin/route";
 import userAgentRouter from "./module/user/route";
-
+import callRouter from "./module/call/route";
+import leadsRouter from "./module/leads/route";
+import billingRouter from "./module/billing/route";
+import userAnalyticsRouter from "./module/analytics/route";
 const app = express();
 
 // Trust the first proxy (Next.js dev proxy / reverse proxy in prod)
@@ -25,32 +28,54 @@ app.use(
     credentials: true,
   }),
 );
-const globalLimiter = rateLimit({
+const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 100,
+
+  max: process.env.NODE_ENV === "production" ? 300 : 5000,
+
   standardHeaders: true,
   legacyHeaders: false,
-  message: { success: false, message: "Too many requests" },
+
+  message: {
+    success: false,
+    message: "Too many requests",
+  },
+
+  skipSuccessfulRequests: true,
+  skip: (req) => {
+    return (
+      process.env.NODE_ENV !== "production" &&
+      (req.ip === "::1" || req.ip === "127.0.0.1")
+    );
+  },
 });
 
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
+
   max: process.env.NODE_ENV === "production" ? 20 : 1000,
+
   standardHeaders: true,
   legacyHeaders: false,
-  message: { success: false, message: "Too many auth attempts, try later" },
+
+  message: {
+    success: false,
+    message: "Too many auth attempts, try later",
+  },
 });
 
-app.use(globalLimiter);
 app.use(express.json({ limit: "10kb" }));
 app.use(cookieParser());
 
 // Routes
 app.use("/webhook", webhookRouter);
 app.use("/api/auth", authLimiter, authRouter);
-// app.use("/api/auth", authRouter);
-app.use("/api/admin", adminRouter);
-app.use("/api/user/agents", userAgentRouter);
+app.use("/api/user/analytics", apiLimiter, userAnalyticsRouter);
+app.use("/api/user/billing", apiLimiter, billingRouter);
+app.use("/api/user/leads", apiLimiter, leadsRouter);
+app.use("/api/user/calls", apiLimiter, callRouter);
+app.use("/api/user/agents", apiLimiter, userAgentRouter);
+app.use("/api/admin", apiLimiter, adminRouter);
 
 app.get("/", (_, res) => {
   res.json({
@@ -77,6 +102,5 @@ process.on("uncaughtException", (err) => {
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, async () => {
-  await seedAdmin();
   console.log(`Server running on port ${PORT}`);
 });

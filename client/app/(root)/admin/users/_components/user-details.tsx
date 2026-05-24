@@ -52,6 +52,7 @@ export function UserDrawer({
       ? {
           name: user.name,
           email: user.email,
+          vapiPhoneNumberId: user.vapiPhoneNumberId,
           role: user.role,
           plan: user.plan,
           minutesLimit: user.minutesLimit,
@@ -73,6 +74,7 @@ export function UserDrawer({
         role: user.role,
         plan: user.plan,
         minutesLimit: user.minutesLimit,
+        vapiPhoneNumberId: user.vapiPhoneNumberId,
       });
       setRawMinutes(String(user.minutesLimit));
       setErrors({});
@@ -244,6 +246,18 @@ export function UserDrawer({
                 { label: "Role", value: <RoleBadge role={user.role} /> },
                 { label: "Plan", value: <PlanBadge plan={user.plan} /> },
                 {
+                  label: "Phone Number ID",
+                  value: (
+                    <span className="text-[var(--text)] text-xs font-mono">
+                      {user.vapiPhoneNumberId || (
+                        <span className="text-[var(--text-3)]">
+                          Not assigned
+                        </span>
+                      )}
+                    </span>
+                  ),
+                },
+                {
                   label: "Status",
                   value: <StatusBadge blocked={user.isBlocked} />,
                 },
@@ -316,6 +330,18 @@ export function UserDrawer({
                 className="bg-[var(--surface-2)] border-[var(--border-2)] focus-visible:ring-[var(--accent-raw)]/40 text-[var(--text)] h-9"
               />
               {err("email")}
+            </div>
+            <div>
+              <Label className="text-[var(--text-2)] text-xs mb-1.5 block">
+                Vapi Phone Number ID
+              </Label>
+              <Input
+                value={form.vapiPhoneNumberId || ""}
+                onChange={(e) => set("vapiPhoneNumberId")(e.target.value)}
+                placeholder="pn_xxxxxxxxxx"
+                className="bg-[var(--surface-2)] border-[var(--border-2)] focus-visible:ring-[var(--accent-raw)]/40 text-[var(--text)] h-9 font-mono text-xs"
+              />
+              {err("vapiPhoneNumberId")}
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
@@ -396,10 +422,7 @@ export function UserDrawer({
               />
               {err("minutesLimit")}
             </div>
-            <Button
-              onClick={save}
-              disabled={saving}
-            >
+            <Button onClick={save} disabled={saving}>
               {saving ? (
                 <Loader2 size={14} className="animate-spin mr-1.5" />
               ) : null}
